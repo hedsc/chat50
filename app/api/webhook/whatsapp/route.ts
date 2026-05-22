@@ -40,12 +40,23 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ erro: "Corpo inválido" }, { status: 400 });
   }
 
+  console.log("[webhook] payload completo:", JSON.stringify(payload, null, 2));
+
   const { instance, event, data } = payload;
 
   // Ignorar eventos que não sejam mensagens de texto recebidas
-  if (event !== "message") return NextResponse.json({ ok: true });
-  if (!data || data.fromMe) return NextResponse.json({ ok: true });
-  if (data.type !== "text") return NextResponse.json({ ok: true });
+  if (event !== "message") {
+    console.log("[webhook] ignorado — event:", event);
+    return NextResponse.json({ ok: true });
+  }
+  if (!data || data.fromMe) {
+    console.log("[webhook] ignorado — fromMe:", data?.fromMe, "| data existe:", !!data);
+    return NextResponse.json({ ok: true });
+  }
+  if (data.type !== "text") {
+    console.log("[webhook] ignorado — type:", data.type);
+    return NextResponse.json({ ok: true });
+  }
 
   const { from, body: mensagem, timestamp } = data;
 
