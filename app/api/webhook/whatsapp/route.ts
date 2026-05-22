@@ -19,36 +19,55 @@ async function enviarMensagemWhatsApp(para: string, texto: string): Promise<void
   }
 }
 
+interface UazapiPayload {
+  instance?: string;
+  event?: string;
+  data?: {
+    from?: string;
+    fromMe?: boolean;
+    body?: string;
+    type?: string;
+    timestamp?: number;
+  };
+}
+
 export async function POST(req: NextRequest): Promise<NextResponse> {
   // ── Parse do corpo ──────────────────────────────────────────────────────────
-  let body: { instanceId?: string; from?: string; body?: string; timestamp?: number };
+  let payload: UazapiPayload;
   try {
-    body = await req.json();
+    payload = await req.json();
   } catch {
     return NextResponse.json({ erro: "Corpo inválido" }, { status: 400 });
   }
 
-  const { instanceId, from, body: mensagem, timestamp } = body;
+  const { instance, event, data } = payload;
 
-  if (!instanceId || !from || !mensagem) {
+  // Ignorar eventos que não sejam mensagens de texto recebidas
+  if (event !== "message") return NextResponse.json({ ok: true });
+  if (!data || data.fromMe) return NextResponse.json({ ok: true });
+  if (data.type !== "text") return NextResponse.json({ ok: true });
+
+  const { from, body: mensagem, timestamp } = data;
+
+  if (!instance || !from || !mensagem) {
     return NextResponse.json(
-      { erro: "Campos obrigatórios em falta: instanceId, from, body" },
+      { erro: "Campos obrigatórios em falta: instance, data.from, data.body" },
       { status: 400 }
     );
   }
 
   console.log("[webhook/whatsapp] Mensagem recebida:");
-  console.log("  instanceId:", instanceId);
+  console.log("  instance  :", instance);
   console.log("  from      :", from);
   console.log("  body      :", mensagem);
   console.log("  timestamp :", timestamp ? new Date(timestamp * 1000).toISOString() : "—");
 
   // ── Buscar AgentConfig da instância ────────────────────────────────────────
   const config = await prisma.agentConfig.findFirst({
-    where: { instanciaUazapi: instanceId },
+    where: { instanciaUazapi: instance },
   });
   if (!config) {
-    console.warn("[webhook/whatsapp] Instância sem configuração:", instanceId);
+    console.warn("[webhook/whatsapp] Instância sem configuração:", instance);
     return NextResponse.json({ ok: true });
   }
 
