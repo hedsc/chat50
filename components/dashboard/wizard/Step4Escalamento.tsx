@@ -7,7 +7,7 @@ import { type DadosFormulario } from "@/lib/types/agentConfig";
 interface Step4Props {
   dados: DadosFormulario;
   erros: Partial<Record<string, string>>;
-  onChange: (campo: keyof DadosFormulario, valor: any) => void;
+  onChange: (campo: keyof DadosFormulario, valor: DadosFormulario[keyof DadosFormulario]) => void;
 }
 
 const sugestoesKeywords = [

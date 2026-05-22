@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
       assinatura,
       process.env.STRIPE_WEBHOOK_SECRET!
     );
-  } catch (err) {
+  } catch {
     return NextResponse.json(
       { erro: "Assinatura do webhook inválida" },
       { status: 400 }

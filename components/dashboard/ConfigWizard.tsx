@@ -53,7 +53,7 @@ export function ConfigWizard() {
   const [mensagemErro, setMensagemErro] = useState("");
   const [isPending, startTransition] = useTransition();
 
-  const onChange = (campo: keyof DadosFormulario, valor: any) => {
+  const onChange = (campo: keyof DadosFormulario, valor: DadosFormulario[keyof DadosFormulario]) => {
     setDados((prev) => ({ ...prev, [campo]: valor }));
     // Limpar erro do campo ao editar
     if (erros[campo]) setErros((prev) => ({ ...prev, [campo]: undefined }));

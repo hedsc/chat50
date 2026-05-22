@@ -9,7 +9,7 @@ import { type DadosFormulario, type FAQ } from "@/lib/types/agentConfig";
 
 interface Step3Props {
   dados: DadosFormulario;
-  onChange: (campo: keyof DadosFormulario, valor: any) => void;
+  onChange: (campo: keyof DadosFormulario, valor: DadosFormulario[keyof DadosFormulario]) => void;
 }
 
 export function Step3Conhecimento({ dados, onChange }: Step3Props) {
