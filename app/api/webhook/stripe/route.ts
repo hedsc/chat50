@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-      apiVersion: "2024-06-20",
+      apiVersion: "2026-04-22.dahlia",
     });
 
     evento = stripe.webhooks.constructEvent(
