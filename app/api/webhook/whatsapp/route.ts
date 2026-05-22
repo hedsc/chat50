@@ -5,14 +5,13 @@ import { generateAgentResponse } from "@/lib/claudeService";
 export const dynamic = "force-dynamic";
 
 async function enviarMensagemWhatsApp(para: string, texto: string): Promise<void> {
-  const numero = para.replace(/@s\.whatsapp\.net$/, "");
   const res = await fetch(`${process.env.UAZAPI_URL}/send/text`, {
     method: "POST",
     headers: {
       token: process.env.UAZAPI_TOKEN!,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ number: numero, text: texto }),
+    body: JSON.stringify({ number: para, text: texto }),
   });
   if (!res.ok) {
     throw new Error(`uazapi ${res.status}: ${await res.text()}`);
@@ -20,19 +19,18 @@ async function enviarMensagemWhatsApp(para: string, texto: string): Promise<void
 }
 
 interface UazapiPayload {
-  instance?: string;
-  event?: string;
-  data?: {
-    from?: string;
+  EventType?: string;
+  instanceName?: string;
+  message?: {
+    content?: string;
     fromMe?: boolean;
-    body?: string;
     type?: string;
-    timestamp?: number;
+    messageType?: string;
+    chatid?: string;
   };
 }
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
-  // ── Parse do corpo ──────────────────────────────────────────────────────────
   let payload: UazapiPayload;
   try {
     payload = await req.json();
@@ -42,43 +40,41 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   console.log("[webhook] payload completo:", JSON.stringify(payload, null, 2));
 
-  const { instance, event, data } = payload;
+  const { EventType, instanceName, message } = payload;
 
-  // Ignorar eventos que não sejam mensagens de texto recebidas
-  if (event !== "message") {
-    console.log("[webhook] ignorado — event:", event);
-    return NextResponse.json({ ok: true });
-  }
-  if (!data || data.fromMe) {
-    console.log("[webhook] ignorado — fromMe:", data?.fromMe, "| data existe:", !!data);
-    return NextResponse.json({ ok: true });
-  }
-  if (data.type !== "text") {
-    console.log("[webhook] ignorado — type:", data.type);
+  if (EventType !== "messages") {
+    console.log("[webhook] ignorado — EventType:", EventType);
     return NextResponse.json({ ok: true });
   }
 
-  const { from, body: mensagem, timestamp } = data;
+  if (!message || message.fromMe) {
+    console.log("[webhook] ignorado — fromMe:", message?.fromMe, "| message existe:", !!message);
+    return NextResponse.json({ ok: true });
+  }
 
-  if (!instance || !from || !mensagem) {
+  if (message.type !== "text" && message.messageType !== "Conversation") {
+    console.log("[webhook] ignorado — type:", message.type, "| messageType:", message.messageType);
+    return NextResponse.json({ ok: true });
+  }
+
+  const { content: mensagem, chatid } = message;
+
+  if (!instanceName || !chatid || !mensagem) {
+    console.log("[webhook] campos em falta — instanceName:", instanceName, "| chatid:", chatid, "| content:", mensagem);
     return NextResponse.json(
-      { erro: "Campos obrigatórios em falta: instance, data.from, data.body" },
+      { erro: "Campos obrigatórios em falta: instanceName, message.chatid, message.content" },
       { status: 400 }
     );
   }
 
-  console.log("[webhook/whatsapp] Mensagem recebida:");
-  console.log("  instance  :", instance);
-  console.log("  from      :", from);
-  console.log("  body      :", mensagem);
-  console.log("  timestamp :", timestamp ? new Date(timestamp * 1000).toISOString() : "—");
+  console.log("[webhook] mensagem válida — instance:", instanceName, "| de:", chatid, "| texto:", mensagem);
 
   // ── Buscar AgentConfig da instância ────────────────────────────────────────
   const config = await prisma.agentConfig.findFirst({
-    where: { instanciaUazapi: instance },
+    where: { instanciaUazapi: instanceName },
   });
   if (!config) {
-    console.warn("[webhook/whatsapp] Instância sem configuração:", instance);
+    console.warn("[webhook] instância sem configuração:", instanceName);
     return NextResponse.json({ ok: true });
   }
 
@@ -87,16 +83,16 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
     textoResposta = await generateAgentResponse(config.systemPrompt, [], mensagem);
   } catch (erro) {
-    console.error("[webhook/whatsapp] Erro ao gerar resposta:", erro);
+    console.error("[webhook] erro ao gerar resposta:", erro);
     return NextResponse.json({ ok: true });
   }
 
   // ── Enviar resposta via uazapi ──────────────────────────────────────────────
   try {
-    await enviarMensagemWhatsApp(from, textoResposta);
-    console.log("[webhook/whatsapp] Resposta enviada para:", from);
+    await enviarMensagemWhatsApp(chatid, textoResposta);
+    console.log("[webhook] resposta enviada para:", chatid);
   } catch (erro) {
-    console.error("[webhook/whatsapp] Erro ao enviar mensagem:", erro);
+    console.error("[webhook] erro ao enviar mensagem:", erro);
   }
 
   return NextResponse.json({ ok: true }, { status: 200 });
