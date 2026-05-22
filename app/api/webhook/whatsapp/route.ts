@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { generateAgentResponse } from "@/lib/claudeService";
 
+export const dynamic = "force-dynamic";
+
 async function enviarMensagemWhatsApp(para: string, texto: string): Promise<void> {
   const numero = para.replace(/@s\.whatsapp\.net$/, "");
   const res = await fetch(`${process.env.UAZAPI_URL}/send/text`, {
