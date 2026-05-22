@@ -20,14 +20,6 @@ async function enviarMensagemWhatsApp(para: string, texto: string): Promise<void
 }
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
-  // ── Autenticação ────────────────────────────────────────────────────────────
-  const authHeader = req.headers.get("authorization");
-  const tokenEsperado = process.env.UAZAPI_TOKEN;
-
-  if (!authHeader || authHeader !== tokenEsperado) {
-    return NextResponse.json({ erro: "Não autorizado" }, { status: 401 });
-  }
-
   // ── Parse do corpo ──────────────────────────────────────────────────────────
   let body: { instanceId?: string; from?: string; body?: string; timestamp?: number };
   try {
