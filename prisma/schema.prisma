@@ -1,0 +1,97 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Utilizador {
+  id              String       @id @default(cuid())
+  clerkId         String       @unique
+  email           String       @unique
+  nome            String?
+  plano           Plano        @default(GRATUITO)
+  stripeClienteId String?      @unique
+  subscricaoId    String?      @unique
+  criadoEm       DateTime     @default(now())
+  actualizadoEm  DateTime     @updatedAt
+  conversas       Conversa[]
+  agentConfig     AgentConfig?
+
+  @@map("utilizadores")
+}
+
+model AgentConfig {
+  id                  String     @id @default(cuid())
+  utilizadorId        String     @unique
+  utilizador          Utilizador @relation(fields: [utilizadorId], references: [id], onDelete: Cascade)
+
+  // Passo 1 — Perfil do Negócio
+  nomeNegocio         String
+  sector              String
+  descricao           String
+  diasFuncionamento   String[]
+  horarioAbertura     String
+  horarioFecho        String
+
+  // Passo 2 — Personalidade
+  nomeAgente          String
+  tom                 String     // formal | simpatico | neutro
+  mensagemBoasVindas  String
+
+  // Passo 3 — Conhecimento
+  faqs                Json
+  catalogo            String?
+
+  // Passo 4 — Escalamento
+  keywordsEscalamento String[]
+  emailDono           String?
+  telefoneDono        String?
+
+  // Instância uazapi associada (definida nas definições da conta)
+  instanciaUazapi     String?    @unique
+
+  // Prompt gerado automaticamente
+  systemPrompt        String
+
+  criadoEm           DateTime   @default(now())
+  actualizadoEm      DateTime   @updatedAt
+
+  @@map("agent_configs")
+}
+
+model Conversa {
+  id            String      @id @default(cuid())
+  utilizadorId  String
+  utilizador    Utilizador  @relation(fields: [utilizadorId], references: [id], onDelete: Cascade)
+  telefone      String
+  mensagens     Mensagem[]
+  criadaEm     DateTime    @default(now())
+  actualizadaEm DateTime   @updatedAt
+
+  @@map("conversas")
+}
+
+model Mensagem {
+  id          String    @id @default(cuid())
+  conversaId  String
+  conversa    Conversa  @relation(fields: [conversaId], references: [id], onDelete: Cascade)
+  conteudo    String
+  remetente   Remetente
+  enviadaEm  DateTime  @default(now())
+
+  @@map("mensagens")
+}
+
+enum Plano {
+  GRATUITO
+  BASICO
+  PRO
+}
+
+enum Remetente {
+  UTILIZADOR
+  ASSISTENTE
+}
