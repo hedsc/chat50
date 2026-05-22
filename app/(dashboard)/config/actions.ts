@@ -3,6 +3,7 @@
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { gerarSystemPrompt } from "@/lib/systemPrompt";
 import type { DadosFormulario } from "@/lib/types/agentConfig";
 
@@ -46,7 +47,7 @@ export async function guardarConfigAgente(
         nomeAgente: dados.nomeAgente,
         tom: dados.tom,
         mensagemBoasVindas: dados.mensagemBoasVindas,
-        faqs: faqsLimpas,
+        faqs: faqsLimpas as unknown as Prisma.InputJsonValue,
         catalogo: dados.catalogo || null,
         keywordsEscalamento: dados.keywordsEscalamento,
         emailDono: dados.emailDono || null,
@@ -64,7 +65,7 @@ export async function guardarConfigAgente(
         nomeAgente: dados.nomeAgente,
         tom: dados.tom,
         mensagemBoasVindas: dados.mensagemBoasVindas,
-        faqs: faqsLimpas,
+        faqs: faqsLimpas as unknown as Prisma.InputJsonValue,
         catalogo: dados.catalogo || null,
         keywordsEscalamento: dados.keywordsEscalamento,
         emailDono: dados.emailDono || null,
