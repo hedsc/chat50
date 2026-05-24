@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useEffect, useTransition } from "react";
 import { ChevronLeft, ChevronRight, Save, CheckCircle2, Loader2, AlertCircle } from "lucide-react";
 import { StepIndicador } from "@/components/dashboard/wizard/StepIndicador";
 import { Step1Perfil } from "@/components/dashboard/wizard/Step1Perfil";
@@ -10,7 +10,7 @@ import { Step4Escalamento } from "@/components/dashboard/wizard/Step4Escalamento
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { type DadosFormulario, dadosIniciais } from "@/lib/types/agentConfig";
-import { guardarConfigAgente } from "@/app/(dashboard)/config/actions";
+import { guardarConfigAgente, getAgentConfig } from "@/app/(dashboard)/config/actions";
 
 const TITULOS_PASSOS = [
   { titulo: "Perfil do Negócio", descricao: "Conta-nos sobre a tua empresa" },
@@ -52,6 +52,18 @@ export function ConfigWizard() {
   const [estadoGuardar, setEstadoGuardar] = useState<"idle" | "sucesso" | "erro">("idle");
   const [mensagemErro, setMensagemErro] = useState("");
   const [isPending, startTransition] = useTransition();
+  const [carregando, setCarregando] = useState(true);
+  const [existeConfig, setExisteConfig] = useState(false);
+
+  useEffect(() => {
+    getAgentConfig().then((config) => {
+      if (config) {
+        setDados(config);
+        setExisteConfig(true);
+      }
+      setCarregando(false);
+    });
+  }, []);
 
   const onChange = (campo: keyof DadosFormulario, valor: DadosFormulario[keyof DadosFormulario]) => {
     setDados((prev) => ({ ...prev, [campo]: valor }));
@@ -97,6 +109,14 @@ export function ConfigWizard() {
 
   const infoStep = TITULOS_PASSOS[passo - 1];
 
+  if (carregando) {
+    return (
+      <div className="mx-auto flex max-w-2xl items-center justify-center py-24">
+        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       {/* Step indicator */}
@@ -138,7 +158,7 @@ export function ConfigWizard() {
           <CheckCircle2 className="h-5 w-5 shrink-0 text-green-500" />
           <div>
             <p className="text-sm font-semibold text-green-800">
-              Configuração guardada com sucesso!
+              {existeConfig ? "Configuração actualizada com sucesso!" : "Configuração guardada com sucesso!"}
             </p>
             <p className="text-xs text-green-700">
               O system prompt do teu agente foi gerado e guardado na base de dados.
@@ -189,12 +209,12 @@ export function ConfigWizard() {
             {isPending ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                A guardar…
+                {existeConfig ? "A actualizar…" : "A guardar…"}
               </>
             ) : (
               <>
                 <Save className="h-4 w-4" />
-                Guardar Configuração
+                {existeConfig ? "Actualizar Configuração" : "Guardar Configuração"}
               </>
             )}
           </Button>

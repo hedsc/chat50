@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { gerarSystemPrompt } from "@/lib/systemPrompt";
-import type { DadosFormulario } from "@/lib/types/agentConfig";
+import type { DadosFormulario, FAQ } from "@/lib/types/agentConfig";
 
 export async function guardarConfigAgente(
   dados: DadosFormulario
@@ -82,5 +82,48 @@ export async function guardarConfigAgente(
       sucesso: false,
       erro: "Erro ao guardar a configuração. Verifica a ligação e tenta novamente.",
     };
+  }
+}
+
+export async function getAgentConfig(): Promise<DadosFormulario | null> {
+  try {
+    const { userId } = await auth();
+    if (!userId) return null;
+
+    const utilizador = await prisma.utilizador.findUnique({
+      where: { clerkId: userId },
+    });
+    if (!utilizador) return null;
+
+    const config = await prisma.agentConfig.findUnique({
+      where: { utilizadorId: utilizador.id },
+    });
+    if (!config) return null;
+
+    const faqsDb = Array.isArray(config.faqs) ? (config.faqs as FAQ[]) : [];
+    const faqs: FAQ[] = [
+      ...faqsDb.map((f) => ({ pergunta: f.pergunta ?? "", resposta: f.resposta ?? "" })),
+      ...Array.from({ length: Math.max(0, 10 - faqsDb.length) }, () => ({ pergunta: "", resposta: "" })),
+    ];
+
+    return {
+      nomeNegocio: config.nomeNegocio,
+      sector: config.sector,
+      descricao: config.descricao,
+      diasFuncionamento: config.diasFuncionamento,
+      horarioAbertura: config.horarioAbertura,
+      horarioFecho: config.horarioFecho,
+      nomeAgente: config.nomeAgente,
+      tom: (config.tom as DadosFormulario["tom"]) ?? "neutro",
+      mensagemBoasVindas: config.mensagemBoasVindas,
+      faqs,
+      catalogo: config.catalogo ?? "",
+      keywordsEscalamento: config.keywordsEscalamento,
+      emailDono: config.emailDono ?? "",
+      telefoneDono: config.telefoneDono ?? "",
+    };
+  } catch (erro) {
+    console.error("[getAgentConfig]", erro);
+    return null;
   }
 }
