@@ -10,7 +10,7 @@ import { Step4Escalamento } from "@/components/dashboard/wizard/Step4Escalamento
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { type DadosFormulario, dadosIniciais } from "@/lib/types/agentConfig";
-import { guardarConfigAgente, getAgentConfig } from "@/app/(dashboard)/config/actions";
+import { guardarConfigAgente, getAgentConfig, type GetAgentConfigResult } from "@/app/(dashboard)/config/actions";
 
 const TITULOS_PASSOS = [
   { titulo: "Perfil do Negócio", descricao: "Conta-nos sobre a tua empresa" },
@@ -56,11 +56,15 @@ export function ConfigWizard() {
   const [existeConfig, setExisteConfig] = useState(false);
 
   useEffect(() => {
-    getAgentConfig().then((config) => {
-      if (config) {
-        setDados(config);
+    getAgentConfig().then((resultado: GetAgentConfigResult) => {
+      console.log("[ConfigWizard] getAgentConfig resultado:", resultado);
+      if (resultado.dados) {
+        setDados(resultado.dados);
         setExisteConfig(true);
       }
+      setCarregando(false);
+    }).catch((err) => {
+      console.error("[ConfigWizard] getAgentConfig falhou:", err);
       setCarregando(false);
     });
   }, []);

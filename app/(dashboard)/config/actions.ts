@@ -85,23 +85,42 @@ export async function guardarConfigAgente(
   }
 }
 
-export async function getAgentConfig(): Promise<DadosFormulario | null> {
+export type GetAgentConfigResult = {
+  clerkId: string | null;
+  utilizadorEncontrado: boolean;
+  configEncontrada: boolean;
+  dados: DadosFormulario | null;
+  erro?: string;
+};
+
+export async function getAgentConfig(): Promise<GetAgentConfigResult> {
+  let clerkId: string | null = null;
   try {
-    const { userId } = await auth();
-    console.log("[getAgentConfig] clerkId:", userId ?? "null — sessão sem userId");
-    if (!userId) return null;
+    const authResult = await auth();
+    clerkId = authResult.userId ?? null;
+    console.log("[getAgentConfig] clerkId:", clerkId ?? "null — sessão sem userId");
+
+    if (!clerkId) {
+      return { clerkId: null, utilizadorEncontrado: false, configEncontrada: false, dados: null };
+    }
 
     const utilizador = await prisma.utilizador.findUnique({
-      where: { clerkId: userId },
+      where: { clerkId },
     });
-    console.log("[getAgentConfig] utilizador encontrado:", utilizador ? `id=${utilizador.id}` : "não encontrado");
-    if (!utilizador) return null;
+    console.log("[getAgentConfig] utilizador:", utilizador ? `id=${utilizador.id}` : "não encontrado");
+
+    if (!utilizador) {
+      return { clerkId, utilizadorEncontrado: false, configEncontrada: false, dados: null };
+    }
 
     const config = await prisma.agentConfig.findUnique({
       where: { utilizadorId: utilizador.id },
     });
-    console.log("[getAgentConfig] agentConfig encontrado:", config ? `id=${config.id} | negócio=${config.nomeNegocio}` : "não encontrado");
-    if (!config) return null;
+    console.log("[getAgentConfig] agentConfig:", config ? `id=${config.id} | negócio=${config.nomeNegocio}` : "não encontrado");
+
+    if (!config) {
+      return { clerkId, utilizadorEncontrado: true, configEncontrada: false, dados: null };
+    }
 
     const faqsDb = Array.isArray(config.faqs) ? (config.faqs as FAQ[]) : [];
     const faqs: FAQ[] = [
@@ -110,23 +129,34 @@ export async function getAgentConfig(): Promise<DadosFormulario | null> {
     ];
 
     return {
-      nomeNegocio: config.nomeNegocio,
-      sector: config.sector,
-      descricao: config.descricao,
-      diasFuncionamento: config.diasFuncionamento,
-      horarioAbertura: config.horarioAbertura,
-      horarioFecho: config.horarioFecho,
-      nomeAgente: config.nomeAgente,
-      tom: (config.tom as DadosFormulario["tom"]) ?? "neutro",
-      mensagemBoasVindas: config.mensagemBoasVindas,
-      faqs,
-      catalogo: config.catalogo ?? "",
-      keywordsEscalamento: config.keywordsEscalamento,
-      emailDono: config.emailDono ?? "",
-      telefoneDono: config.telefoneDono ?? "",
+      clerkId,
+      utilizadorEncontrado: true,
+      configEncontrada: true,
+      dados: {
+        nomeNegocio: config.nomeNegocio,
+        sector: config.sector,
+        descricao: config.descricao,
+        diasFuncionamento: config.diasFuncionamento,
+        horarioAbertura: config.horarioAbertura,
+        horarioFecho: config.horarioFecho,
+        nomeAgente: config.nomeAgente,
+        tom: (config.tom as DadosFormulario["tom"]) ?? "neutro",
+        mensagemBoasVindas: config.mensagemBoasVindas,
+        faqs,
+        catalogo: config.catalogo ?? "",
+        keywordsEscalamento: config.keywordsEscalamento,
+        emailDono: config.emailDono ?? "",
+        telefoneDono: config.telefoneDono ?? "",
+      },
     };
   } catch (erro) {
-    console.error("[getAgentConfig]", erro);
-    return null;
+    console.error("[getAgentConfig] erro:", erro);
+    return {
+      clerkId,
+      utilizadorEncontrado: false,
+      configEncontrada: false,
+      dados: null,
+      erro: erro instanceof Error ? erro.message : String(erro),
+    };
   }
 }
