@@ -4,11 +4,11 @@ import { generateAgentResponse } from "@/lib/claudeService";
 
 export const dynamic = "force-dynamic";
 
-async function enviarMensagemWhatsApp(para: string, texto: string): Promise<void> {
+async function enviarMensagemWhatsApp(para: string, texto: string, instanceToken: string): Promise<void> {
   const res = await fetch(`${process.env.UAZAPI_URL}/send/text`, {
     method: "POST",
     headers: {
-      token: process.env.UAZAPI_TOKEN!,
+      token: instanceToken,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({ number: para, text: texto }),
@@ -21,6 +21,7 @@ async function enviarMensagemWhatsApp(para: string, texto: string): Promise<void
 interface UazapiPayload {
   EventType?: string;
   instanceName?: string;
+  token?: string;
   message?: {
     content?: string;
     fromMe?: boolean;
@@ -40,7 +41,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   console.log("[webhook] payload completo:", JSON.stringify(payload, null, 2));
 
-  const { EventType, instanceName, message } = payload;
+  const { EventType, instanceName, token: instanceToken, message } = payload;
 
   if (EventType !== "messages") {
     console.log("[webhook] ignorado — EventType:", EventType);
@@ -59,10 +60,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   const { content: mensagem, chatid } = message;
 
-  if (!instanceName || !chatid || !mensagem) {
-    console.log("[webhook] campos em falta — instanceName:", instanceName, "| chatid:", chatid, "| content:", mensagem);
+  if (!instanceName || !instanceToken || !chatid || !mensagem) {
+    console.log("[webhook] campos em falta — instanceName:", instanceName, "| token:", !!instanceToken, "| chatid:", chatid, "| content:", mensagem);
     return NextResponse.json(
-      { erro: "Campos obrigatórios em falta: instanceName, message.chatid, message.content" },
+      { erro: "Campos obrigatórios em falta: instanceName, token, message.chatid, message.content" },
       { status: 400 }
     );
   }
@@ -89,7 +90,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   // ── Enviar resposta via uazapi ──────────────────────────────────────────────
   try {
-    await enviarMensagemWhatsApp(chatid, textoResposta);
+    await enviarMensagemWhatsApp(chatid, textoResposta, instanceToken);
     console.log("[webhook] resposta enviada para:", chatid);
   } catch (erro) {
     console.error("[webhook] erro ao enviar mensagem:", erro);
