@@ -72,10 +72,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   // ── Buscar AgentConfig da instância ────────────────────────────────────────
   const config = await prisma.agentConfig.findFirst({
-    where: { instanciaUazapi: instanceName },
+    where: { instanciaUazapi: instanceToken },
   });
   if (!config) {
-    console.warn("[webhook] instância sem configuração:", instanceName);
+    console.warn("[webhook] instância sem configuração — token:", instanceToken, "| instanceName:", instanceName);
     return NextResponse.json({ ok: true });
   }
 
