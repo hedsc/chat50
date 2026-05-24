@@ -88,16 +88,19 @@ export async function guardarConfigAgente(
 export async function getAgentConfig(): Promise<DadosFormulario | null> {
   try {
     const { userId } = await auth();
+    console.log("[getAgentConfig] clerkId:", userId ?? "null — sessão sem userId");
     if (!userId) return null;
 
     const utilizador = await prisma.utilizador.findUnique({
       where: { clerkId: userId },
     });
+    console.log("[getAgentConfig] utilizador encontrado:", utilizador ? `id=${utilizador.id}` : "não encontrado");
     if (!utilizador) return null;
 
     const config = await prisma.agentConfig.findUnique({
       where: { utilizadorId: utilizador.id },
     });
+    console.log("[getAgentConfig] agentConfig encontrado:", config ? `id=${config.id} | negócio=${config.nomeNegocio}` : "não encontrado");
     if (!config) return null;
 
     const faqsDb = Array.isArray(config.faqs) ? (config.faqs as FAQ[]) : [];
