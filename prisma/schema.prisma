@@ -15,10 +15,11 @@ model Utilizador {
   plano           Plano        @default(GRATUITO)
   stripeClienteId String?      @unique
   subscricaoId    String?      @unique
-  criadoEm       DateTime     @default(now())
-  actualizadoEm  DateTime     @updatedAt
+  criadoEm       DateTime          @default(now())
+  actualizadoEm  DateTime          @updatedAt
   conversas       Conversa[]
   agentConfig     AgentConfig?
+  whatsappSessao  WhatsAppSession?
 
   @@map("utilizadores")
 }
@@ -83,6 +84,20 @@ model Mensagem {
   enviadaEm  DateTime  @default(now())
 
   @@map("mensagens")
+}
+
+model WhatsAppSession {
+  id            String     @id @default(cuid())
+  utilizadorId  String     @unique
+  utilizador    Utilizador @relation(fields: [utilizadorId], references: [id], onDelete: Cascade)
+  instanceName  String
+  instanceToken String
+  status        String     @default("pendente") // pendente | conectado | desconectado
+  phone         String?
+  criadoEm     DateTime   @default(now())
+  actualizadoEm DateTime  @updatedAt
+
+  @@map("whatsapp_sessions")
 }
 
 enum Plano {

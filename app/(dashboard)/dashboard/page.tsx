@@ -3,13 +3,13 @@ import {
   MessageSquare,
   CheckCircle2,
   ArrowUpRight,
-  Wifi,
   WifiOff,
   Bot,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ModalLigarWhatsApp } from "@/components/dashboard/ModalLigarWhatsApp";
 
 const metricas = [
   {
@@ -99,12 +99,7 @@ export default function PaginaPainel() {
               o teu agente.
             </p>
             <div className="mt-4">
-              <Link href="/dashboard/config">
-                <Button variant="outline" size="sm" className="gap-2">
-                  <Wifi className="h-3.5 w-3.5" />
-                  Ligar WhatsApp
-                </Button>
-              </Link>
+              <ModalLigarWhatsApp />
             </div>
           </CardContent>
         </Card>
