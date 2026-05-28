@@ -98,7 +98,6 @@ export async function getAgentConfig(): Promise<GetAgentConfigResult> {
   try {
     const authResult = await auth();
     clerkId = authResult.userId ?? null;
-    console.log("[getAgentConfig] clerkId:", clerkId ?? "null — sessão sem userId");
 
     if (!clerkId) {
       return { clerkId: null, utilizadorEncontrado: false, configEncontrada: false, dados: null };
@@ -106,17 +105,14 @@ export async function getAgentConfig(): Promise<GetAgentConfigResult> {
 
     const utilizador = await prisma.utilizador.findUnique({
       where: { clerkId },
+      include: { agentConfig: true },
     });
-    console.log("[getAgentConfig] utilizador:", utilizador ? `id=${utilizador.id}` : "não encontrado");
 
     if (!utilizador) {
       return { clerkId, utilizadorEncontrado: false, configEncontrada: false, dados: null };
     }
 
-    const config = await prisma.agentConfig.findUnique({
-      where: { utilizadorId: utilizador.id },
-    });
-    console.log("[getAgentConfig] agentConfig:", config ? `id=${config.id} | negócio=${config.nomeNegocio}` : "não encontrado");
+    const config = utilizador.agentConfig;
 
     if (!config) {
       return { clerkId, utilizadorEncontrado: true, configEncontrada: false, dados: null };
