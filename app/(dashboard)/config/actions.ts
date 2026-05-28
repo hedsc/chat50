@@ -118,7 +118,7 @@ export async function getAgentConfig(): Promise<GetAgentConfigResult> {
       return { clerkId, utilizadorEncontrado: true, configEncontrada: false, dados: null };
     }
 
-    const faqsDb = Array.isArray(config.faqs) ? (config.faqs as FAQ[]) : [];
+    const faqsDb = Array.isArray(config.faqs) ? (config.faqs as unknown as FAQ[]) : [];
     const faqs: FAQ[] = [
       ...faqsDb.map((f) => ({ pergunta: f.pergunta ?? "", resposta: f.resposta ?? "" })),
       ...Array.from({ length: Math.max(0, 10 - faqsDb.length) }, () => ({ pergunta: "", resposta: "" })),
